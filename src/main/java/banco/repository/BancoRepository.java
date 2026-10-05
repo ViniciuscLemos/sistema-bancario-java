@@ -11,19 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-/**
- * Repository — camada de acesso a dados
- *
- * O padrão Repository separa a lógica de negócio do acesso ao banco.
- * O service não sabe se os dados vêm de MySQL, SQLite ou outro lugar.
- *
- * Conceitos aqui:
- * - JDBC: API Java para banco de dados relacional
- * - PreparedStatement: evita SQL Injection (parametrizado)
- * - Optional<T>: forma moderna de tratar ausência de valor (evita NullPointerException)
- * - try-with-resources: garante fechamento automático de recursos
- * - Transações: commit/rollback para operações que precisam ser "tudo ou nada"
- */
+/** Todo o SQL do sistema fica aqui. */
 public class BancoRepository {
 
     private final Connection conn;
@@ -34,10 +22,8 @@ public class BancoRepository {
     }
 
     private void criarTabelas() {
-        // try-with-resources: Statement é fechado automaticamente ao sair do bloco
         try (Statement stmt = conn.createStatement()) {
-            // Valores em dinheiro são guardados como TEXT ("1500.00") para não
-            // perder precisão — REAL é ponto flutuante, como o double do Java.
+            // dinheiro vai como TEXT ("1500.00"); REAL é ponto flutuante e perde precisão
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS contas (
                     id         TEXT PRIMARY KEY,
@@ -50,8 +36,8 @@ public class BancoRepository {
                 )
             """);
 
-            // conta_origem  = conta dona da transação (a que aparece no extrato)
-            // conta_destino = a outra conta envolvida numa transferência (ou NULL)
+            // conta_origem é a conta dona da linha no extrato;
+            // conta_destino é a outra conta numa transferência (ou NULL)
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS transacoes (
                     id              TEXT PRIMARY KEY,
@@ -71,13 +57,7 @@ public class BancoRepository {
         }
     }
 
-    /**
-     * Executa várias operações como uma única transação do banco:
-     * ou todas são gravadas (commit), ou nenhuma (rollback).
-     *
-     * Ex: numa transferência, se o depósito no destino falhar,
-     * o saque da origem também é desfeito.
-     */
+    /** Roda tudo numa transação: se der exceção no meio, faz rollback. */
     public <T> T emTransacao(Supplier<T> operacao) {
         try {
             boolean autoCommitAnterior = conn.getAutoCommit();
@@ -97,14 +77,12 @@ public class BancoRepository {
         }
     }
 
-    /** Salva uma conta nova no banco */
     public void salvarConta(Conta conta) {
         String sql = """
             INSERT INTO contas (id, titular, cpf, tipo, saldo, ativa, criado_em)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """;
 
-        // PreparedStatement com ? parametrizado — nunca concatene strings SQL!
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, conta.getId());
             ps.setString(2, conta.getTitular());
@@ -119,7 +97,6 @@ public class BancoRepository {
         }
     }
 
-    /** Atualiza o saldo e o status de uma conta */
     public void atualizarConta(Conta conta) {
         String sql = "UPDATE contas SET saldo = ?, ativa = ? WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -127,7 +104,7 @@ public class BancoRepository {
             ps.setInt(2, conta.isAtiva() ? 1 : 0);
             ps.setString(3, conta.getId());
             if (ps.executeUpdate() != 1) {
-                // Se nenhuma linha mudou, algo está errado — melhor falhar do que perder dinheiro em silêncio
+                // se nada mudou, melhor dar erro do que sumir com o dinheiro em silêncio
                 throw new IllegalStateException("Conta não encontrada para atualizar: " + conta.getId());
             }
         } catch (SQLException e) {
@@ -135,10 +112,6 @@ public class BancoRepository {
         }
     }
 
-    /**
-     * Busca uma conta pelo ID.
-     * Retorna Optional.empty() se não encontrar (evita retornar null).
-     */
     public Optional<Conta> buscarPorId(String id) {
         return buscarUma("SELECT * FROM contas WHERE id = ?", id);
     }
@@ -192,12 +165,7 @@ public class BancoRepository {
         }
     }
 
-    /**
-     * Extrato de uma conta, da mais recente para a mais antiga.
-     *
-     * Filtra só por conta_origem (a dona da transação). Antes a consulta também
-     * incluía conta_destino, e cada transferência aparecia duas vezes no extrato.
-     */
+    /** Extrato da conta, do mais recente pro mais antigo. */
     public List<Transacao> listarExtrato(String contaId) {
         List<Transacao> lista = new ArrayList<>();
         String sql = """
@@ -218,8 +186,6 @@ public class BancoRepository {
         return lista;
     }
 
-    // Métodos privados que convertem ResultSet em objetos Java.
-    // Usam os construtores de "reconstrução", que preservam ID e datas salvos.
     private Conta mapearConta(ResultSet rs) throws SQLException {
         return new Conta(
             rs.getString("id"),

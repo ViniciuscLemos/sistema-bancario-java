@@ -9,15 +9,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Service — lógica de negócio do sistema bancário
- *
- * O Service orquestra as operações de negócio usando o Repository.
- * Aqui ficam as regras: "pode sacar?", "saldo suficiente?", etc.
- *
- * Padrão de camadas:
- *   Main (UI) → Service (regras) → Repository (banco de dados) → Model (dados)
- */
+/** Regras do banco (validações, transferência...). O SQL fica no repository. */
 public class BancoService {
 
     private final BancoRepository repo;
@@ -26,7 +18,6 @@ public class BancoService {
         this.repo = repo;
     }
 
-    /** Abre uma nova conta após validações */
     public Conta abrirConta(String titular, String cpf, Conta.TipoConta tipo, BigDecimal deposito) {
         if (titular == null || titular.isBlank()) {
             throw new IllegalArgumentException("Nome do titular é obrigatório");
@@ -39,7 +30,6 @@ public class BancoService {
             throw new IllegalArgumentException("Depósito inicial não pode ser negativo");
         }
 
-        // Verifica se CPF já está cadastrado
         if (repo.buscarPorCpf(cpfLimpo).isPresent()) {
             throw new IllegalStateException("CPF já possui conta cadastrada");
         }
@@ -49,7 +39,6 @@ public class BancoService {
         return repo.emTransacao(() -> {
             repo.salvarConta(conta);
 
-            // Registra o depósito inicial como transação
             if (deposito.signum() > 0) {
                 repo.salvarTransacao(new Transacao(
                     conta.getId(), null,
@@ -61,7 +50,6 @@ public class BancoService {
         });
     }
 
-    /** Deposita valor em uma conta pelo ID */
     public Conta depositar(String contaId, BigDecimal valor, String descricao) {
         Conta conta = buscarOuLancar(contaId);
         conta.depositar(valor);
@@ -78,10 +66,9 @@ public class BancoService {
         });
     }
 
-    /** Saca valor de uma conta */
     public Conta sacar(String contaId, BigDecimal valor, String descricao) {
         Conta conta = buscarOuLancar(contaId);
-        conta.sacar(valor);  // lança exceção se saldo insuficiente
+        conta.sacar(valor);
 
         return repo.emTransacao(() -> {
             repo.atualizarConta(conta);
@@ -95,12 +82,7 @@ public class BancoService {
         });
     }
 
-    /**
-     * Realiza transferência entre contas.
-     *
-     * Operação atômica: as quatro gravações (duas contas e duas transações)
-     * acontecem dentro de uma transação do banco — ou todas, ou nenhuma.
-     */
+    /** As duas contas e as duas linhas do extrato são gravadas juntas, numa transação só. */
     public void transferir(String origemId, String destinoId, BigDecimal valor) {
         if (origemId.equals(destinoId)) {
             throw new IllegalArgumentException("Conta de origem e destino não podem ser iguais");
@@ -113,7 +95,6 @@ public class BancoService {
             throw new IllegalStateException("Conta de destino está encerrada");
         }
 
-        // Valida e aplica nos objetos antes de gravar qualquer coisa
         origem.sacar(valor);
         destino.depositar(valor);
 
@@ -121,7 +102,6 @@ public class BancoService {
             repo.atualizarConta(origem);
             repo.atualizarConta(destino);
 
-            // Registra duas transações: uma no extrato de cada conta
             repo.salvarTransacao(new Transacao(
                 origem.getId(), destino.getId(),
                 Transacao.TipoTransacao.TRANSFERENCIA_ENVIADA,
@@ -138,7 +118,6 @@ public class BancoService {
         });
     }
 
-    /** Encerra uma conta com saldo zerado */
     public Conta encerrarConta(String contaId) {
         Conta conta = buscarOuLancar(contaId);
         conta.encerrar();
@@ -147,7 +126,7 @@ public class BancoService {
     }
 
     public List<Transacao> verExtrato(String contaId) {
-        buscarOuLancar(contaId);  // garante que a conta existe
+        buscarOuLancar(contaId);
         return repo.listarExtrato(contaId);
     }
 
@@ -159,7 +138,6 @@ public class BancoService {
         return repo.buscarPorId(id);
     }
 
-    /** Soma dos saldos de todas as contas ativas */
     public BigDecimal saldoTotal() {
         return listarContas().stream()
             .filter(Conta::isAtiva)
@@ -167,13 +145,11 @@ public class BancoService {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    /** Método auxiliar: busca a conta ou lança exceção com mensagem clara */
     private Conta buscarOuLancar(String id) {
         return repo.buscarPorId(id)
             .orElseThrow(() -> new IllegalArgumentException("Conta não encontrada: " + id));
     }
 
-    /** Formata um valor para exibição — atalho usado pela interface */
     public static String formatar(BigDecimal valor) {
         return Moeda.formatar(valor);
     }

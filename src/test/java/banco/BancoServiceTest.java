@@ -18,12 +18,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Testes de integração: service + repository com um SQLite de verdade.
- */
+// service + repository usando um SQLite de verdade
 class BancoServiceTest {
 
-    // CPFs fictícios com dígitos verificadores válidos
+    // CPFs inventados, mas válidos
     static final String CPF_MARIA = "52998224725";
     static final String CPF_JOAO = "11144477735";
 
@@ -77,7 +75,6 @@ class BancoServiceTest {
             () -> service.abrirConta("Outra", CPF_MARIA, Conta.TipoConta.CORRENTE, reais("0")));
     }
 
-    /** Bug antigo: ao ler do banco a conta ganhava um ID novo e o saldo nunca era atualizado. */
     @Test
     void depositoESaquePersistemOSaldo() {
         Conta conta = service.abrirConta("Maria", CPF_MARIA, Conta.TipoConta.CORRENTE, reais("100"));
@@ -114,7 +111,6 @@ class BancoServiceTest {
         assertEquals(reais("1200.00"), service.buscarPorId(maria.getId()).orElseThrow().getSaldo());
         assertEquals(reais("1100.00"), service.buscarPorId(joao.getId()).orElseThrow().getSaldo());
 
-        // Bug antigo: cada transferência aparecia duas vezes no extrato
         List<Transacao> extratoMaria = service.verExtrato(maria.getId());
         assertEquals(2, extratoMaria.size());
         assertEquals(Transacao.TipoTransacao.TRANSFERENCIA_ENVIADA, extratoMaria.get(0).getTipo());
@@ -150,14 +146,13 @@ class BancoServiceTest {
         assertThrows(IllegalStateException.class, () -> service.depositar(conta.getId(), reais("1"), null));
     }
 
-    /** Bug antigo: o contador de transações voltava a TXN-001 e a 2ª execução quebrava com PRIMARY KEY duplicada. */
     @Test
     void dadosSobrevivemAReaberturaDoPrograma() throws SQLException {
         Conta conta = service.abrirConta("Maria", CPF_MARIA, Conta.TipoConta.CORRENTE, reais("100"));
         service.depositar(conta.getId(), reais("1"), null);
         conn.close();
 
-        // Simula fechar e abrir o programa de novo
+        // fecha e abre de novo, como se fosse outra execução do programa
         conn = conectar();
         service = new BancoService(new BancoRepository(conn));
 

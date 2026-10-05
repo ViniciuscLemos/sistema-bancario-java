@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Testes unitários das classes de modelo e utilitários (sem banco). */
 class ModelTest {
 
     @ParameterizedTest

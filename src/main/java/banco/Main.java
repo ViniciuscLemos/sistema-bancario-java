@@ -14,23 +14,14 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
-/**
- * Ponto de entrada — Interface de linha de comando (CLI)
- *
- * Conceitos aqui:
- * - JDBC: conexão com banco SQLite via DriverManager
- * - Scanner: leitura de entrada do usuário
- * - switch com "->" (Java 14+): mais elegante que o switch tradicional
- * - Tratamento de exceções com try-catch
- */
+/** Menu do terminal. */
 public class Main {
 
     private static BancoService service;
     private static final Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        // SQLite: o arquivo banco.db é criado automaticamente.
-        // Um caminho diferente pode ser passado como argumento: java -jar ... outro.db
+        // dá pra passar outro arquivo: java -jar sistema-bancario.jar outro.db
         String arquivo = args.length > 0 ? args[0] : "banco.db";
         String url = "jdbc:sqlite:" + arquivo;
 
@@ -40,10 +31,8 @@ public class Main {
             BancoRepository repo = new BancoRepository(conn);
             service = new BancoService(repo);
 
-            // Popula com dados de exemplo na primeira execução
             popularDadosExemplo();
 
-            // Loop principal do menu
             boolean rodando = true;
             while (rodando) {
                 exibirMenu();
@@ -68,7 +57,7 @@ public class Main {
         } catch (SQLException e) {
             System.err.println("Erro de banco de dados: " + e.getMessage());
         } catch (NoSuchElementException e) {
-            // Fim da entrada (Ctrl+D / Ctrl+Z)
+            // Ctrl+D / Ctrl+Z
             System.out.println("\nEntrada encerrada. Até logo!");
         }
     }
@@ -209,11 +198,10 @@ public class Main {
     }
 
     private static void popularDadosExemplo() {
-        // Só popula se não houver contas cadastradas
         if (!service.listarContas().isEmpty()) return;
 
         System.out.println("Criando contas de exemplo...");
-        // CPFs fictícios, mas com dígitos verificadores válidos
+        // CPFs inventados, mas válidos
         Conta c1 = service.abrirConta("Maria Silva", "529.982.247-25", Conta.TipoConta.CORRENTE, new BigDecimal("1500.00"));
         Conta c2 = service.abrirConta("João Santos", "111.444.777-35", Conta.TipoConta.POUPANCA, new BigDecimal("800.00"));
         service.transferir(c1.getId(), c2.getId(), new BigDecimal("300.00"));

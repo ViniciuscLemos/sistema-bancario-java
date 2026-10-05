@@ -6,19 +6,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 /**
- * Modelo de Transação
- *
- * Representa qualquer movimentação financeira:
- * depósito, saque ou transferência.
- *
- * Cada transação pertence a UMA conta (contaId). Uma transferência gera duas
- * transações: TRANSFERENCIA_ENVIADA na conta de origem e TRANSFERENCIA_RECEBIDA
- * na de destino; contaContraparteId aponta para a outra conta envolvida.
- *
- * Conceitos aqui:
- * - enum com múltiplos valores
- * - Objeto imutável (todos os campos são final)
- * - Formatação de datas com DateTimeFormatter
+ * Uma movimentação no extrato de uma conta.
+ * Transferência gera duas: ENVIADA na origem e RECEBIDA no destino,
+ * e contaContraparteId guarda a outra conta.
  */
 public class Transacao {
 
@@ -29,11 +19,9 @@ public class Transacao {
         TRANSFERENCIA_RECEBIDA
     }
 
-    // Objeto imutável: todos os campos são final
-    // Uma transação registrada nunca deve ser alterada
     private final String id;
     private final String contaId;
-    private final String contaContraparteId;  // null para depósito/saque
+    private final String contaContraparteId;  // null em depósito e saque
     private final TipoTransacao tipo;
     private final BigDecimal valor;
     private final BigDecimal saldoApos;
@@ -43,17 +31,13 @@ public class Transacao {
     private static final DateTimeFormatter FORMATTER =
         DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
-    /** Registra uma transação nova. */
     public Transacao(String contaId, String contaContraparteId,
                      TipoTransacao tipo, BigDecimal valor, BigDecimal saldoApos, String descricao) {
-        // Antes, o ID vinha de um contador estático que voltava a 1 a cada execução
-        // do programa e colidia com os IDs já salvos (PRIMARY KEY duplicada).
-        // Um UUID é único mesmo entre execuções.
         this("TXN-" + UUID.randomUUID().toString().substring(0, 13).toUpperCase(),
              contaId, contaContraparteId, tipo, valor, saldoApos, descricao, LocalDateTime.now());
     }
 
-    /** Reconstrói uma transação lida do banco, preservando ID e data originais. */
+    /** Transação lida do banco de dados. */
     public Transacao(String id, String contaId, String contaContraparteId, TipoTransacao tipo,
                      BigDecimal valor, BigDecimal saldoApos, String descricao, LocalDateTime realizadoEm) {
         this.id = id;
@@ -66,7 +50,6 @@ public class Transacao {
         this.realizadoEm = realizadoEm;
     }
 
-    // Getters
     public String getId()                 { return id; }
     public String getContaId()            { return contaId; }
     public String getContaContraparteId() { return contaContraparteId; }
@@ -82,13 +65,10 @@ public class Transacao {
 
     @Override
     public String toString() {
-        // Sinal negativo para saques e transferências enviadas
-        String sinal = isCredito() ? "+" : "-";
-
         return String.format(
             "%s  %s%14s  Saldo: %14s  | %s",
             realizadoEm.format(FORMATTER),
-            sinal,
+            isCredito() ? "+" : "-",
             Moeda.formatar(valor),
             Moeda.formatar(saldoApos),
             descricao
