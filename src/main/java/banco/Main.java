@@ -94,7 +94,7 @@ public class Main {
             Conta conta = service.abrirConta(nome, cpf, tipo, deposito);
             System.out.println("\nConta aberta com sucesso!");
             System.out.println("ID da sua conta: " + conta.getId());
-            System.out.println("ANOTE este ID — você precisará dele para operações.");
+            System.out.println("Anota esse ID, ele é usado em todas as operações.");
         } catch (RuntimeException e) {
             System.out.println("Erro: " + e.getMessage());
         }
@@ -102,7 +102,9 @@ public class Main {
 
     private static void realizarDeposito() {
         System.out.println("\n--- DEPÓSITO ---");
-        String id = lerId("ID da conta: ");
+        Conta alvo = lerConta("ID da conta: ");
+        if (alvo == null) return;
+        String id = alvo.getId();
         System.out.print("Valor: R$ ");
         BigDecimal valor = lerValor();
         if (valor == null) return;
@@ -119,7 +121,9 @@ public class Main {
 
     private static void realizarSaque() {
         System.out.println("\n--- SAQUE ---");
-        String id = lerId("ID da conta: ");
+        Conta alvo = lerConta("ID da conta: ");
+        if (alvo == null) return;
+        String id = alvo.getId();
         System.out.print("Valor: R$ ");
         BigDecimal valor = lerValor();
         if (valor == null) return;
@@ -134,14 +138,24 @@ public class Main {
 
     private static void realizarTransferencia() {
         System.out.println("\n--- TRANSFERÊNCIA ---");
-        String origem = lerId("ID da conta de origem: ");
-        String destino = lerId("ID da conta de destino: ");
+        Conta origem = lerConta("ID da conta de origem: ");
+        if (origem == null) return;
+        Conta destino = lerConta("ID da conta de destino: ");
+        if (destino == null) return;
         System.out.print("Valor: R$ ");
         BigDecimal valor = lerValor();
         if (valor == null) return;
 
+        // mostra o nome de quem vai receber antes, como nos apps de banco
+        System.out.printf("Transferir %s de %s para %s? (s/N): ",
+            Moeda.formatar(valor), origem.getTitular(), destino.getTitular());
+        if (!scanner.nextLine().trim().equalsIgnoreCase("s")) {
+            System.out.println("Operação cancelada.");
+            return;
+        }
+
         try {
-            service.transferir(origem, destino, valor);
+            service.transferir(origem.getId(), destino.getId(), valor);
             System.out.println("\nTransferência realizada com sucesso!");
         } catch (RuntimeException e) {
             System.out.println("Erro: " + e.getMessage());
@@ -150,13 +164,13 @@ public class Main {
 
     private static void verExtrato() {
         System.out.println("\n--- EXTRATO ---");
-        String id = lerId("ID da conta: ");
+        Conta conta = lerConta("ID da conta: ");
+        if (conta == null) return;
 
         try {
-            List<Transacao> extrato = service.verExtrato(id);
-            Conta conta = service.buscarPorId(id).orElseThrow();
+            List<Transacao> extrato = service.verExtrato(conta.getId());
 
-            System.out.println("\nExtrato da conta " + conta.getId() + " — " + conta.getTitular());
+            System.out.println("\nExtrato da conta " + conta.getId() + " (" + conta.getTitular() + ")");
             System.out.println("-".repeat(90));
             if (extrato.isEmpty()) {
                 System.out.println("Nenhuma transação encontrada.");
@@ -183,14 +197,15 @@ public class Main {
 
     private static void encerrarConta() {
         System.out.println("\n--- ENCERRAR CONTA ---");
-        String id = lerId("ID da conta: ");
-        System.out.print("Confirma o encerramento? (s/N): ");
+        Conta conta = lerConta("ID da conta: ");
+        if (conta == null) return;
+        System.out.print("Confirma o encerramento da conta de " + conta.getTitular() + "? (s/N): ");
         if (!scanner.nextLine().trim().equalsIgnoreCase("s")) {
             System.out.println("Operação cancelada.");
             return;
         }
         try {
-            service.encerrarConta(id);
+            service.encerrarConta(conta.getId());
             System.out.println("Conta encerrada.");
         } catch (RuntimeException e) {
             System.out.println("Erro: " + e.getMessage());
@@ -208,9 +223,17 @@ public class Main {
         System.out.println("Contas de exemplo criadas! IDs: " + c1.getId() + ", " + c2.getId());
     }
 
-    private static String lerId(String prompt) {
+    /** Pede o ID e já confere se a conta existe, antes de perguntar o resto. */
+    private static Conta lerConta(String prompt) {
         System.out.print(prompt);
-        return scanner.nextLine().trim().toUpperCase();
+        String id = scanner.nextLine().trim().toUpperCase();
+        Conta conta = service.buscarPorId(id).orElse(null);
+        if (conta == null) {
+            System.out.println("Conta não encontrada: " + id);
+        } else {
+            System.out.println("  " + conta.getTitular() + (conta.isAtiva() ? "" : " (encerrada)"));
+        }
+        return conta;
     }
 
     /** Lê um valor em reais. Retorna null (e avisa) se o texto não for um número. */
