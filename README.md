@@ -23,6 +23,38 @@ Pra rodar só os testes:
 mvn test
 ```
 
+## Como fica
+
+Uma transferência e o extrato de quem recebeu:
+
+```
+--- TRANSFERÊNCIA ---
+ID da conta de origem: 6C10938A
+  Maria Silva
+ID da conta de destino: 2CE77D9C
+  João Santos
+Valor: R$ 250
+Transferir R$ 250,00 de Maria Silva para João Santos? (s/N): s
+
+Transferência realizada com sucesso!
+
+--- EXTRATO ---
+ID da conta: 2CE77D9C
+  João Santos
+
+Extrato da conta 2CE77D9C (João Santos)
+------------------------------------------------------------------------------------------
+08/10/2026 09:55:56  +     R$ 250,00  Saldo:    R$ 1.350,00  | Transferência de 6C10938A (Maria Silva)
+08/10/2026 09:55:01  +     R$ 300,00  Saldo:    R$ 1.100,00  | Transferência de 6C10938A (Maria Silva)
+08/10/2026 09:55:01  +     R$ 800,00  Saldo:      R$ 800,00  | Depósito inicial na abertura da conta
+------------------------------------------------------------------------------------------
+Saldo atual: R$ 1.350,00
+```
+
+Depois de digitar o ID, o programa já mostra de quem é a conta. Se errar o ID, você descobre na hora, e não depois de digitar o valor. E a transferência só acontece depois de confirmar vendo o nome de quem vai receber.
+
+No Windows, se os acentos aparecerem estranhos no terminal, roda `chcp 65001` antes.
+
 ## Algumas decisões
 
 - Usei `BigDecimal` pros valores em vez de `double`, porque com `double` aparecem erros de arredondamento (tipo `0.1 + 0.2` dar `0.30000000000000004`).
