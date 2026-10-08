@@ -14,7 +14,7 @@ public final class Moeda {
     public static String formatar(BigDecimal valor) {
         NumberFormat formato = NumberFormat.getCurrencyInstance(PT_BR);
         // o Java coloca um espaço não separável depois do R$
-        return formato.format(valor).replace(' ', ' ');
+        return formato.format(valor).replace('\u00A0', ' ');
     }
 
     /** Aceita "1500", "1500,50", "1.500,50" e "1500.50". */
