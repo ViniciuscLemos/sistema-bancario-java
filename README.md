@@ -27,29 +27,7 @@ mvn test
 
 A transfer and the statement of the person who got it:
 
-```
---- TRANSFER ---
-Source account ID: 9FDE68D7
-  Maria Silva
-Target account ID: 16BD1C51
-  João Santos
-Amount: $250
-Transfer $250.00 from Maria Silva to João Santos? (y/N): y
-
-Transfer done!
-
---- STATEMENT ---
-Account ID: 16BD1C51
-  João Santos
-
-Statement for account 16BD1C51 (João Santos)
-------------------------------------------------------------------------------------------
-2026-10-09 00:29:28  +     $250.00  Balance:    $1,350.00  | Transfer from 9FDE68D7 (Maria Silva)
-2026-10-09 00:29:27  +     $300.00  Balance:    $1,100.00  | Transfer from 9FDE68D7 (Maria Silva)
-2026-10-09 00:29:27  +     $800.00  Balance:      $800.00  | Initial deposit when opening the account
-------------------------------------------------------------------------------------------
-Current balance: $1,350.00
-```
+![A transfer and the statement in the terminal](docs/screenshot.png)
 
 Right after you type the ID, the program shows whose account it is. If you get the ID wrong, you find out right away, not after typing the amount. And the transfer only happens after you confirm seeing the name of who's getting the money.
 

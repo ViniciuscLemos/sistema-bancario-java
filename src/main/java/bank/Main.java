@@ -170,14 +170,19 @@ public class Main {
         try {
             List<Transaction> statement = service.getStatement(account.getId());
 
+            List<String> lines = statement.stream().map(Transaction::toString).toList();
+            // the line follows the longest row, since the descriptions vary in size
+            int width = Math.max(60, lines.stream().mapToInt(String::length).max().orElse(0));
+            String line = "-".repeat(width);
+
             System.out.println("\nStatement for account " + account.getId() + " (" + account.getHolder() + ")");
-            System.out.println("-".repeat(90));
-            if (statement.isEmpty()) {
+            System.out.println(line);
+            if (lines.isEmpty()) {
                 System.out.println("No transactions found.");
             } else {
-                statement.forEach(System.out::println);
+                lines.forEach(System.out::println);
             }
-            System.out.println("-".repeat(90));
+            System.out.println(line);
             System.out.println("Current balance: " + Money.format(account.getBalance()));
         } catch (RuntimeException e) {
             System.out.println("Error: " + e.getMessage());
