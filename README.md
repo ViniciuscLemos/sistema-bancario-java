@@ -1,80 +1,80 @@
-# Sistema Bancário
+# Banking System
 
-![Testes](https://github.com/ViniciuscLemos/sistema-bancario-java/actions/workflows/testes.yml/badge.svg)
+![Tests](https://github.com/ViniciuscLemos/banking-system-java/actions/workflows/tests.yml/badge.svg)
 
-Um banco simples que roda no terminal, feito em Java com SQLite (JDBC).
+A simple bank that runs in the terminal, written in Java with SQLite (JDBC).
 
-Dá pra abrir conta, depositar, sacar, transferir entre contas, ver o extrato e encerrar uma conta. Os dados ficam salvos num arquivo `banco.db`, então continuam lá quando você abre o programa de novo.
+You can open an account, deposit, withdraw, transfer between accounts, see the statement and close an account. The data is saved to a `bank.db` file, so it's still there when you open the program again.
 
-## Rodando
+## Running
 
-Precisa do JDK 17 e do Maven.
+You need JDK 17 and Maven.
 
 ```bash
 mvn package
-java -jar target/sistema-bancario.jar
+java -jar target/banking-system.jar
 ```
 
-Na primeira vez ele cria duas contas de exemplo pra você testar.
+The first time it runs, it creates two sample accounts for you to play with.
 
-Pra rodar só os testes:
+To run only the tests:
 
 ```bash
 mvn test
 ```
 
-## Como fica
+## What it looks like
 
-Uma transferência e o extrato de quem recebeu:
+A transfer and the statement of the person who got it:
 
 ```
---- TRANSFERÊNCIA ---
-ID da conta de origem: 6C10938A
+--- TRANSFER ---
+Source account ID: 9FDE68D7
   Maria Silva
-ID da conta de destino: 2CE77D9C
+Target account ID: 16BD1C51
   João Santos
-Valor: R$ 250
-Transferir R$ 250,00 de Maria Silva para João Santos? (s/N): s
+Amount: $250
+Transfer $250.00 from Maria Silva to João Santos? (y/N): y
 
-Transferência realizada com sucesso!
+Transfer done!
 
---- EXTRATO ---
-ID da conta: 2CE77D9C
+--- STATEMENT ---
+Account ID: 16BD1C51
   João Santos
 
-Extrato da conta 2CE77D9C (João Santos)
+Statement for account 16BD1C51 (João Santos)
 ------------------------------------------------------------------------------------------
-08/10/2026 09:55:56  +     R$ 250,00  Saldo:    R$ 1.350,00  | Transferência de 6C10938A (Maria Silva)
-08/10/2026 09:55:01  +     R$ 300,00  Saldo:    R$ 1.100,00  | Transferência de 6C10938A (Maria Silva)
-08/10/2026 09:55:01  +     R$ 800,00  Saldo:      R$ 800,00  | Depósito inicial na abertura da conta
+2026-10-09 00:29:28  +     $250.00  Balance:    $1,350.00  | Transfer from 9FDE68D7 (Maria Silva)
+2026-10-09 00:29:27  +     $300.00  Balance:    $1,100.00  | Transfer from 9FDE68D7 (Maria Silva)
+2026-10-09 00:29:27  +     $800.00  Balance:      $800.00  | Initial deposit when opening the account
 ------------------------------------------------------------------------------------------
-Saldo atual: R$ 1.350,00
+Current balance: $1,350.00
 ```
 
-Depois de digitar o ID, o programa já mostra de quem é a conta. Se errar o ID, você descobre na hora, e não depois de digitar o valor. E a transferência só acontece depois de confirmar vendo o nome de quem vai receber.
+Right after you type the ID, the program shows whose account it is. If you get the ID wrong, you find out right away, not after typing the amount. And the transfer only happens after you confirm seeing the name of who's getting the money.
 
-No Windows, se os acentos aparecerem estranhos no terminal, roda `chcp 65001` antes.
+On Windows, if accented names look weird in the terminal, run `chcp 65001` first.
 
-## Algumas decisões
+## Some decisions
 
-- Usei `BigDecimal` pros valores em vez de `double`, porque com `double` aparecem erros de arredondamento (tipo `0.1 + 0.2` dar `0.30000000000000004`).
-- A transferência roda numa transação do banco: ou as duas contas são atualizadas, ou nenhuma é.
-- O CPF é validado pelos dígitos verificadores, e não dá pra abrir duas contas no mesmo CPF.
-- Na hora de digitar valores, dá pra usar `1500`, `1500,50` ou `1.500,50`.
+- I used `BigDecimal` for money instead of `double`, because `double` has rounding errors (like `0.1 + 0.2` being `0.30000000000000004`).
+- The transfer runs inside a database transaction: either both accounts are updated, or neither is.
+- Each account is tied to a CPF (the Brazilian taxpayer ID). It's validated by its check digits, and you can't open two accounts with the same CPF.
+- When typing amounts, you can use `1500`, `1500.50` or `1,500.50`.
 
-## Estrutura
+## Structure
 
-Separei em camadas:
-
-```
-Main (menu) → BancoService (regras) → BancoRepository (SQL) → SQLite
-```
+I split it into layers:
 
 ```
-src/main/java/banco/
+Main (menu) -> BankService (rules) -> BankRepository (SQL) -> SQLite
+```
+
+```
+src/main/java/bank/
   Main.java
-  model/        Conta, Transacao, Moeda
-  repository/   BancoRepository
-  service/      BancoService, Cpf
-src/test/java/banco/
+  model/        Account, Transaction, Money
+  repository/   BankRepository
+  service/      BankService, Cpf
+src/test/java/bank/
 ```

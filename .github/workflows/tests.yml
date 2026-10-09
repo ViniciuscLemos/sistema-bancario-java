@@ -1,11 +1,11 @@
-name: Testes
+name: Tests
 
 on:
   push:
   pull_request:
 
 jobs:
-  testes:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,5 +14,5 @@ jobs:
           distribution: temurin
           java-version: 17
           cache: maven
-      - name: Testes e empacotamento
+      - name: Tests and packaging
         run: mvn -B package
