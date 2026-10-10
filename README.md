@@ -25,13 +25,15 @@ mvn test
 
 ## What it looks like
 
-A transfer and the statement of the person who got it:
+A withdrawal, a typo in the amount and the statement, with money in shown in green and money out in red:
 
-![A transfer and the statement in the terminal](docs/screenshot.png)
+![A withdrawal, an invalid amount and the statement in the terminal](docs/screenshot.png)
 
 Right after you type the ID, the program shows whose account it is. If you get the ID wrong, you find out right away, not after typing the amount. And the transfer only happens after you confirm seeing the name of who's getting the money.
 
 On Windows, if accented names look weird in the terminal, run `chcp 65001` first.
+
+The colors only show up in a real terminal, so `java -jar banking-system.jar > out.txt` gives a clean file. Set `NO_COLOR=1` to turn them off or `FORCE_COLOR=1` to keep them when piping.
 
 ## Some decisions
 
