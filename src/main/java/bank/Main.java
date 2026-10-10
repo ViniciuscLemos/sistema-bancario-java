@@ -50,7 +50,7 @@ public class Main {
                         System.out.println("\nShutting down. Bye!");
                         running = false;
                     }
-                    default -> System.out.println("Invalid option. Try again.");
+                    default -> System.out.println(Colors.red("Invalid option. Try again."));
                 }
             }
 
@@ -96,7 +96,7 @@ public class Main {
             System.out.println("Your account ID: " + account.getId());
             System.out.println("Write this ID down, it's used in every operation.");
         } catch (RuntimeException e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println(Colors.red("Error: " + e.getMessage()));
         }
     }
 
@@ -115,7 +115,7 @@ public class Main {
             Account account = service.deposit(id, amount, desc.isEmpty() ? null : desc);
             System.out.println("\nDeposit done! New balance: " + Money.format(account.getBalance()));
         } catch (RuntimeException e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println(Colors.red("Error: " + e.getMessage()));
         }
     }
 
@@ -132,7 +132,7 @@ public class Main {
             Account account = service.withdraw(id, amount, "ATM withdrawal");
             System.out.println("\nWithdrawal done! New balance: " + Money.format(account.getBalance()));
         } catch (RuntimeException e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println(Colors.red("Error: " + e.getMessage()));
         }
     }
 
@@ -158,7 +158,7 @@ public class Main {
             service.transfer(source.getId(), target.getId(), amount);
             System.out.println("\nTransfer done!");
         } catch (RuntimeException e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println(Colors.red("Error: " + e.getMessage()));
         }
     }
 
@@ -180,13 +180,22 @@ public class Main {
             if (lines.isEmpty()) {
                 System.out.println("No transactions found.");
             } else {
-                lines.forEach(System.out::println);
+                // the width above is measured on the plain lines; the colors go in after
+                statement.forEach(t -> System.out.println(colored(t)));
             }
             System.out.println(line);
             System.out.println("Current balance: " + Money.format(account.getBalance()));
         } catch (RuntimeException e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println(Colors.red("Error: " + e.getMessage()));
         }
+    }
+
+    /** The statement line with the amount in green (money in) or red (money out). */
+    static String colored(Transaction t) {
+        String plain = t.toString();
+        String amount = String.format("%s%12s", t.isCredit() ? "+" : "-", Money.format(t.getAmount()));
+        String painted = t.isCredit() ? Colors.green(amount) : Colors.red(amount);
+        return plain.replaceFirst(java.util.regex.Pattern.quote(amount), java.util.regex.Matcher.quoteReplacement(painted));
     }
 
     private static void listAccounts() {
@@ -213,7 +222,7 @@ public class Main {
             service.closeAccount(account.getId());
             System.out.println("Account closed.");
         } catch (RuntimeException e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println(Colors.red("Error: " + e.getMessage()));
         }
     }
 
@@ -234,7 +243,7 @@ public class Main {
         String id = scanner.nextLine().trim().toUpperCase();
         Account account = service.findById(id).orElse(null);
         if (account == null) {
-            System.out.println("Account not found: " + id);
+            System.out.println(Colors.red("Account not found: " + id));
         } else {
             System.out.println("  " + account.getHolder() + (account.isActive() ? "" : " (closed)"));
         }
@@ -247,7 +256,7 @@ public class Main {
         try {
             return Money.parse(text);
         } catch (NumberFormatException e) {
-            System.out.println("Invalid amount: \"" + text.trim() + "\". Cancelled.");
+            System.out.println(Colors.red("Invalid amount: \"" + text.trim() + "\". Cancelled."));
             return null;
         }
     }
